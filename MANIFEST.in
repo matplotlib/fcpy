@@ -1,0 +1,7 @@
+include README
+include buildext/*.py
+include tox.ini
+include src/*.c src/*.h
+include docstrings/*.py
+include versioneer.py
+include lib/fcpy/_version.py
