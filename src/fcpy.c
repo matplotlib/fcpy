@@ -70,7 +70,7 @@ PyObject *fcpy_module;
     static void
     fcpy_module_dealloc(PyObject *m)
     {
-        FcFini();
+
     }
 
     static struct PyModuleDef moduledef = {

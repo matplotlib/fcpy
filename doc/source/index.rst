@@ -6,8 +6,8 @@
 fcpy documentation
 ======================
 
-`fcpy` is a general-purpose Python wrapper to `FreeType
-<http://www.freetype.org>`_ with a goal to be fast and flexible as
+`fcpy` is a general-purpose Python wrapper to `fontconfig
+<http://www.fontconfig.org>`_ with a goal to be fast and flexible as
 possible.
 
 It is open source under the BSD license.

@@ -36,11 +36,98 @@ either expressed or implied, of the FreeBSD Project.
 #define PATTERN_METHOD_NOARGS(name) DEF_METHOD_NOARGS(name, Pattern)
 
 
+static PyTypeObject Py_Valiter_Type;
+
+
 PyTypeObject Py_Pattern_Type;
 
 
 static FcBool
 _Py_Pattern_add(FcPattern *pattern, char *object, PyObject *value);
+
+
+static PyObject *
+_Py_Pattern_get(FcPattern *pattern, const FcObjectType *type, char *object, int i);
+
+
+
+/****************************************************************************
+ Value iterator
+*/
+
+
+typedef struct {
+    fcpy_Object base;
+    FcPattern *pattern;
+    char *object;
+    int i;
+    const FcObjectType *type;
+} Py_Valiter;
+
+
+static PyTypeObject Py_Valiter_Type;
+
+
+PyObject *
+Py_Valiter_cnew(Py_Pattern *pattern, char *object)
+{
+    Py_Valiter *self;
+    self = (Py_Valiter *)(&Py_Valiter_Type)->tp_alloc(&Py_Valiter_Type, 0);
+    if (self == NULL) {
+        return NULL;
+    }
+    Py_INCREF(pattern);
+    self->base.owner = (PyObject *)pattern;
+    self->pattern = pattern->x;
+    self->object = object;
+    self->i = 0;
+    self->type = FcNameGetObjectType(object);
+
+    return (PyObject *)self;
+}
+
+
+static PyObject *
+Py_Valiter_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
+    Py_Valiter *self;
+
+    self = (Py_Valiter *)fcpy_Object_new(type, args, kwds);
+    if (self == NULL) {
+        return NULL;
+    }
+    self->pattern = NULL;
+    self->object = NULL;
+    self->i = 0;
+    return (PyObject *)self;
+}
+
+
+static int
+Py_Valiter_init(Py_Valiter *self, PyObject *args, PyObject *kwds)
+{
+    PyErr_SetString(
+        PyExc_RuntimeError,
+        "Valiter objects may not be instantiated directly.");
+    return -1;
+}
+
+
+static PyObject *
+Py_Valiter_next(Py_Valiter *self)
+{
+    PyObject *result;
+
+    result = _Py_Pattern_get(self->pattern, self->type, self->object, self->i);
+
+    if (result != NULL) {
+        self->i++;
+    } else {
+        PyErr_Clear();
+    }
+
+    return result;
+}
 
 
 /****************************************************************************
@@ -96,8 +183,7 @@ Py_Pattern_init(Py_Pattern *self, PyObject *args, PyObject *kwds)
 
     /* TODO: Handle kwarg init */
 
-    if (PyTuple_Size(args) == 1 &&
-        PyDict_Size(kwds) == 0) {
+    if (PyTuple_Size(args) == 1 && kwds == NULL) {
 
         py_pattern = PyTuple_GetItem(args, 0);
         if (PyBytes_Check(py_pattern)) {
@@ -110,8 +196,7 @@ Py_Pattern_init(Py_Pattern *self, PyObject *args, PyObject *kwds)
             goto exit;
         }
 
-    } else if (PyTuple_Size(args) == 0 &&
-               PyDict_Size(kwds) == 0) {
+    } else if (PyTuple_Size(args) == 0 && kwds == NULL) {
 
         self->x = FcPatternCreate();
         goto exit;
@@ -144,7 +229,6 @@ Py_Pattern_init(Py_Pattern *self, PyObject *args, PyObject *kwds)
             }
         }
         goto exit;
-
     }
 
  exit:
@@ -218,35 +302,84 @@ Py_Pattern_repr(Py_Pattern *self)
 
 
 static FcBool
-_Py_Pattern_add(FcPattern *pattern, char *object, PyObject *value)
+_Py_Pattern_add_single(FcPattern *pattern, char *object, PyObject *value)
 {
     int i;
     double d;
     char *s;
+    FcBool b;
 
-    if (PyLong_Check(value)) {
-        i = PyLong_AsLong(value);
-        return !FcPatternAddInteger(pattern, object, i);
-    }
-    #if !PY3K
-    else if (PyInt_Check(value)) {
-        i = PyInt_AsLong(value);
-        return !FcPatternAddInteger(pattern, object, i);
-    }
-    #endif
-    else if (PyFloat_Check(value)) {
-        d = PyFloat_AsDouble(value);
-        return !FcPatternAddDouble(pattern, object, d);
-    } else if (PyBytes_Check(value)) {
-        s = PyBytes_AsString(value);
-        return !FcPatternAddString(pattern, object, (unsigned char *)s);
-    } else if (PyUnicode_Check(value)) {
-        s = PyUnicode_AsUTF8(value);
-        return !FcPatternAddString(pattern, object, (unsigned char *)s);
+    const FcObjectType *object_type;
+
+    object_type = FcNameGetObjectType(object);
+
+    switch(object_type->type) {
+    case FcTypeInteger:
+        if (PyLong_Check(value)) {
+            i = PyLong_AsLong(value);
+            return !FcPatternAddInteger(pattern, object, i);
+        }
+        #if !PY3K
+        else if (PyInt_Check(value)) {
+            i = PyInt_AsLong(value);
+            return !FcPatternAddInteger(pattern, object, i);
+        }
+        #endif
+        PyErr_Format(PyExc_TypeError, "Expected int for '%s'", object);
+        return 1;
+
+    case FcTypeDouble:
+        if (PyFloat_Check(value)) {
+            d = PyFloat_AsDouble(value);
+            return !FcPatternAddDouble(pattern, object, d);
+        }
+        PyErr_Format(PyExc_TypeError, "Expected float for '%s'", object);
+        return 1;
+
+    case FcTypeString:
+        if (PyBytes_Check(value)) {
+            s = PyBytes_AsString(value);
+            return !FcPatternAddString(pattern, object, (unsigned char *)s);
+        } else if (PyUnicode_Check(value)) {
+            s = PyUnicode_AsUTF8(value);
+            return !FcPatternAddString(pattern, object, (unsigned char *)s);
+        }
+        PyErr_Format(PyExc_TypeError, "Expected bytes or unicode for '%s'", object);
+        return 1;
+
+    case FcTypeBool:
+        b = PyObject_IsTrue(value);
+        return !FcPatternAddBool(pattern, object, b);
+
+    case FcTypeUnknown:
+    case FcTypeVoid:
+    case FcTypeMatrix:
+    case FcTypeCharSet:
+    case FcTypeFTFace:
+    case FcTypeLangSet:
+        break;
     }
 
-    PyErr_SetString(PyExc_TypeError, "Unknown type");
+    PyErr_SetString(PyExc_TypeError, "Unknown or mismatched type");
     return 1;
+}
+
+
+static FcBool
+_Py_Pattern_add(FcPattern *pattern, char *object, PyObject *value)
+{
+    Py_ssize_t i;
+
+    if (!(PyUnicode_Check(value) || PyBytes_Check(value)) && PyList_Check(value)) {
+        for (i = 0; i < PySequence_Size(value); ++i) {
+            if (_Py_Pattern_add_single(pattern, object, PySequence_GetItem(value, i))) {
+                return 1;
+            }
+        }
+        return 0;
+    } else {
+        return _Py_Pattern_add_single(pattern, object, value);
+    }
 }
 
 
@@ -327,30 +460,80 @@ Py_Pattern_format(Py_Pattern *self, PyObject *args, PyObject *kwds)
 
 
 static PyObject *
+_Py_Pattern_get(FcPattern *pattern, const FcObjectType *type, char *object, int idx)
+{
+    int i;
+    double d;
+    FcChar8 *s;
+    FcBool b;
+    FcResult result;
+
+    switch (type->type) {
+    case FcTypeInteger:
+        result = FcPatternGetInteger(pattern, object, idx, &i);
+        if (result) {
+            fcpy_result_to_exception(result);
+            return NULL;
+        }
+        #if PY3K
+        return PyLong_FromLong(i);
+        #else
+        return PyInt_FromLong(i);
+        #endif
+    case FcTypeDouble:
+        result = FcPatternGetDouble(pattern, object, idx, &d);
+        if (result) {
+            fcpy_result_to_exception(result);
+            return NULL;
+        }
+        return PyFloat_FromDouble(d);
+    case FcTypeString:
+        result = FcPatternGetString(pattern, object, idx, &s);
+        if (result) {
+            fcpy_result_to_exception(result);
+            return NULL;
+        }
+        return PyUnicode_FromString((char *)s);
+    case FcTypeBool:
+        result = FcPatternGetBool(pattern, object, idx, &b);
+        if (result) {
+            fcpy_result_to_exception(result);
+            return NULL;
+        }
+        if (b) {
+            Py_RETURN_TRUE;
+        } else {
+            Py_RETURN_FALSE;
+        }
+
+    case FcTypeUnknown:
+    case FcTypeVoid:
+    case FcTypeMatrix:
+    case FcTypeCharSet:
+    case FcTypeFTFace:
+    case FcTypeLangSet:
+        break;
+    }
+
+    PyErr_SetString(PyExc_TypeError, "Unknown type");
+    return NULL;
+}
+
+
+static PyObject *
 Py_Pattern_get(Py_Pattern *self, PyObject *args, PyObject *kwds)
 {
     char *object;
-    int n;
-    FcChar8 *value;
 
-    FcBool result;
-
-    static char *kwlist[] = {"object", "index", NULL};
+    static char *kwlist[] = {"object", NULL};
 
     if (!PyArg_ParseTupleAndKeywords(
-            args, kwds, "si:get", kwlist,
-            &object, &n)) {
+            args, kwds, "s:get", kwlist,
+            &object)) {
         return NULL;
     }
 
-    result = FcPatternGetString(self->x, object, n, &value);
-
-    if (result == FcResultMatch) {
-        return PyUnicode_FromString((char *)value);
-    } else {
-        fcpy_result_to_exception(result);
-        return NULL;
-    }
+    return Py_Valiter_cnew(self, object);
 }
 
 
@@ -412,6 +595,19 @@ static PyMethodDef Py_Pattern_methods[] = {
 
 int setup_Pattern(PyObject *m)
 {
+    memset(&Py_Valiter_Type, 0, sizeof(PyTypeObject));
+    Py_Valiter_Type = (PyTypeObject) {
+        .tp_name = "freetypy.Valiter",
+        .tp_basicsize = sizeof(Py_Valiter),
+        .tp_iter = PyObject_SelfIter,
+        .tp_iternext = (iternextfunc)Py_Valiter_next,
+        .tp_init = (initproc)Py_Valiter_init,
+        .tp_new = Py_Valiter_new
+    };
+
+    fcpy_setup_type(m, &Py_Valiter_Type);
+
+
     memset(&Py_Pattern_Type, 0, sizeof(PyTypeObject));
     Py_Pattern_Type = (PyTypeObject) {
         .tp_name = "fcpy.Pattern",
