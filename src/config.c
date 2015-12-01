@@ -180,6 +180,38 @@ Py_Config_clear(Py_Config *self, PyObject *args, PyObject *kwds)
 
 
 static PyObject*
+Py_Config_get_config_files(Py_Config *self, PyObject *args, PyObject *kwds)
+{
+    FcStrList *dirs;
+
+    dirs = FcConfigGetConfigFiles(self->x);
+
+    if (dirs == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "Could not get config files");
+        return NULL;
+    }
+
+    return fcpy_strlist_to_python(dirs);
+}
+
+
+static PyObject*
+Py_Config_get_font_dirs(Py_Config *self, PyObject *args, PyObject *kwds)
+{
+    FcStrList *dirs;
+
+    dirs = FcConfigGetConfigDirs(self->x);
+
+    if (dirs == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "Could not get config dirs");
+        return NULL;
+    }
+
+    return fcpy_strlist_to_python(dirs);
+}
+
+
+static PyObject*
 Py_Config_substitute(Py_Config *self, PyObject *args, PyObject *kwds)
 {
     PyObject *py_pattern;
@@ -238,19 +270,13 @@ Py_Config_match(Py_Config *self, PyObject *args, PyObject *kwds)
 }
 
 
-/* TODO: FcConfigGetFontDirs */
-/* TODO: FcConfigGetConfigFiles */
-/* TODO: FcConfigGetCacheDirs */
-/* TODO: FcConfigGetFonts */
-/* TODO: FcConfigGetBlanks */
-/* TODO: FcConfigGetRescanInterval */
-
-
 static PyMethodDef Py_Config_methods[] = {
     CONFIG_METHOD(add_dir),
     CONFIG_METHOD(add_file),
     CONFIG_METHOD_NOARGS(build_fonts),
     CONFIG_METHOD_NOARGS(clear),
+    CONFIG_METHOD_NOARGS(get_config_files),
+    CONFIG_METHOD_NOARGS(get_font_dirs),
     CONFIG_METHOD(substitute),
     CONFIG_METHOD(match),
     {NULL}  /* Sentinel */

@@ -89,6 +89,16 @@ Config_clear = """
 Clears the set of application-specific fonts.
 """
 
+Config_get_config_files = """
+Get the list of config files.
+"""
+
+Config_get_font_dirs = """
+Get the list of font directories.
+
+This includes the configured font directories along with any
+directories below those in the filesystem.
+"""
 
 Config_match = """
 Return the best font.
@@ -108,7 +118,6 @@ Returns
 -------
 match : Pattern
 """
-
 
 Config_substitute = """
 Execute substitutions.

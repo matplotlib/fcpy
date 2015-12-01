@@ -133,3 +133,39 @@ int setup_pyutil(PyObject *m)
 {
     return 0;
 }
+
+
+PyObject *
+fcpy_strlist_to_python(FcStrList *list)
+{
+    FcChar8 *item;
+    PyObject *result = NULL;
+    PyObject *pyitem = NULL;
+
+    result = PyList_New(0);
+    if (result == NULL) {
+        return NULL;
+    }
+
+    FcStrListFirst(list);
+
+    while (item = FcStrListNext(list)) {
+        pyitem = PyBytes_FromString(item);
+        if (pyitem == NULL) {
+            Py_DECREF(result);
+            return NULL;
+        }
+
+        if (PyList_Append(result, pyitem)) {
+            Py_DECREF(result);
+            Py_DECREF(pyitem);
+            return NULL;
+        }
+
+        Py_DECREF(pyitem);
+    }
+
+    FcStrListDone(list);
+
+    return result;
+}

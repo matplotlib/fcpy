@@ -273,15 +273,7 @@ Py_Pattern_richcompare(PyObject *o1, PyObject *o2, int op)
 }
 
 
-/* TODO: FcPatternEqual */
 /* TODO: FcPatternEqualSubset */
-
-/* TODO: FcPatternAdd -- use dict-like interface */
-/* TODO: FcPatternGet -- use dict-like interface */
-/* TODO: FcPatternDel -- use dict-like interface */
-
-/* TODO: FcDefaultSubstitute */
-/* TODO: FcPatternFormat */
 
 
 /****************************************************************************

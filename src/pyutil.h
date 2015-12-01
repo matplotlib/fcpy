@@ -55,6 +55,9 @@ void fcpy_Object_dealloc(PyObject* self);
 PyObject *fcpy_Object_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
 
 
+PyObject *fcpy_strlist_to_python(FcStrList *list);
+
+
 #define MAKE_GETTER(pytype, name, convert_func, member) \
     static PyObject * name ## _get(pytype *self, PyObject *closure) \
     {                                           \
