@@ -149,8 +149,8 @@ fcpy_strlist_to_python(FcStrList *list)
 
     FcStrListFirst(list);
 
-    while (item = FcStrListNext(list)) {
-        pyitem = PyBytes_FromString(item);
+    while ((item = FcStrListNext(list))) {
+        pyitem = PyBytes_FromString((const char *)item);
         if (pyitem == NULL) {
             Py_DECREF(result);
             return NULL;
