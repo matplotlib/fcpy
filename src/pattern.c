@@ -301,6 +301,13 @@ Py_Pattern_repr(Py_Pattern *self)
 */
 
 
+static PyObject *
+Py_Pattern___reduce__(Py_Pattern *self, PyObject *args, PyObject *kwds)
+{
+    return Py_BuildValue("(O(s))", &Py_Pattern_Type, FcNameUnparse(self->x));
+}
+
+
 static FcBool
 _Py_Pattern_add_single(FcPattern *pattern, char *object, PyObject *value)
 {
@@ -578,6 +585,7 @@ Py_Pattern_substitute(Py_Pattern *self, PyObject *args, PyObject *kwds)
 
 
 static PyMethodDef Py_Pattern_methods[] = {
+    {"__reduce__", (PyCFunction)Py_Pattern___reduce__, METH_NOARGS, NULL},
     PATTERN_METHOD(add),
     PATTERN_METHOD(delete),
     PATTERN_METHOD(format),
