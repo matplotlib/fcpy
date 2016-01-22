@@ -181,8 +181,6 @@ Py_Pattern_init(Py_Pattern *self, PyObject *args, PyObject *kwds)
     char *object;
     Py_ssize_t pos;
 
-    /* TODO: Handle kwarg init */
-
     if (PyTuple_Size(args) == 1 && kwds == NULL) {
 
         py_pattern = PyTuple_GetItem(args, 0);
@@ -271,9 +269,6 @@ Py_Pattern_richcompare(PyObject *o1, PyObject *o2, int op)
     Py_INCREF(Py_NotImplemented);
     return Py_NotImplemented;
 }
-
-
-/* TODO: FcPatternEqualSubset */
 
 
 /****************************************************************************
@@ -369,7 +364,7 @@ _Py_Pattern_add(FcPattern *pattern, char *object, PyObject *value)
 {
     Py_ssize_t i;
 
-    if (!(PyUnicode_Check(value) || PyBytes_Check(value)) && PyList_Check(value)) {
+    if (!(PyUnicode_Check(value) || PyBytes_Check(value)) && PySequence_Check(value)) {
         for (i = 0; i < PySequence_Size(value); ++i) {
             if (_Py_Pattern_add_single(pattern, object, PySequence_GetItem(value, i))) {
                 return 1;
@@ -597,7 +592,7 @@ int setup_Pattern(PyObject *m)
 {
     memset(&Py_Valiter_Type, 0, sizeof(PyTypeObject));
     Py_Valiter_Type = (PyTypeObject) {
-        .tp_name = "freetypy.Valiter",
+        .tp_name = "fcpy.Valiter",
         .tp_basicsize = sizeof(Py_Valiter),
         .tp_iter = PyObject_SelfIter,
         .tp_iternext = (iternextfunc)Py_Valiter_next,

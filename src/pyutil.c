@@ -153,12 +153,14 @@ fcpy_strlist_to_python(FcStrList *list)
         pyitem = PyBytes_FromString((const char *)item);
         if (pyitem == NULL) {
             Py_DECREF(result);
+            FcStrListDone(list);
             return NULL;
         }
 
         if (PyList_Append(result, pyitem)) {
             Py_DECREF(result);
             Py_DECREF(pyitem);
+            FcStrListDone(list);
             return NULL;
         }
 

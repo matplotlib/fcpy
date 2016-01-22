@@ -109,15 +109,26 @@ Py_Config_init(Py_Config *self, PyObject *args, PyObject *kwds)
 static PyObject*
 Py_Config_add_dir(Py_Config *self, PyObject *args, PyObject *kwds)
 {
-    /* TODO: Handle Unicode file encoding madness */
-
+    PyObject *pydir;
+    PyObject *pydir_bytes;
     unsigned char *dir;
 
     static char *kwlist[] = {"dir", NULL};
 
     if (!PyArg_ParseTupleAndKeywords(
-            args, kwds, "s:add_dir", kwlist,
-            &dir)) {
+            args, kwds, "O:add_dir", kwlist,
+            &pydir)) {
+        return NULL;
+    }
+
+    pydir_bytes = PyUnicode_EncodeFSDefault(pydir);
+    if (pydir_bytes == NULL) {
+        return NULL;
+    }
+
+    dir = PyBytes_AsString(pydir_bytes);
+    if (dir == NULL) {
+        Py_DECREF(pydir_bytes);
         return NULL;
     }
 
@@ -126,6 +137,8 @@ Py_Config_add_dir(Py_Config *self, PyObject *args, PyObject *kwds)
         return NULL;
     }
 
+    Py_DECREF(pydir_bytes);
+
     Py_RETURN_NONE;
 }
 
@@ -133,15 +146,26 @@ Py_Config_add_dir(Py_Config *self, PyObject *args, PyObject *kwds)
 static PyObject*
 Py_Config_add_file(Py_Config *self, PyObject *args, PyObject *kwds)
 {
-    /* TODO: Handle Unicode file encoding madness */
-
+    PyObject *pyfile;
+    PyObject *pyfile_bytes;
     unsigned char *file;
 
     static char *kwlist[] = {"file", NULL};
 
     if (!PyArg_ParseTupleAndKeywords(
-            args, kwds, "s:add_font", kwlist,
-            &file)) {
+            args, kwds, "O:add_font", kwlist,
+            &pyfile)) {
+        return NULL;
+    }
+
+    pyfile_bytes = PyUnicode_EncodeFSDefault(pyfile);
+    if (pyfile_bytes == NULL) {
+        return NULL;
+    }
+
+    file = PyBytes_AsString(pyfile_bytes);
+    if (file == NULL) {
+        Py_DECREF(pyfile_bytes);
         return NULL;
     }
 
@@ -149,6 +173,8 @@ Py_Config_add_file(Py_Config *self, PyObject *args, PyObject *kwds)
         PyErr_SetString(PyExc_ValueError, "Could not add font");
         return NULL;
     }
+
+    Py_DECREF(pyfile_bytes);
 
     Py_RETURN_NONE;
 }
