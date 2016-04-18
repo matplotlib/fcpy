@@ -435,7 +435,7 @@ Py_Pattern_format(Py_Pattern *self, PyObject *args, PyObject *kwds)
     static char *kwlist[] = {"format", NULL};
 
     if (!PyArg_ParseTupleAndKeywords(
-            args, kwds, "sO:format", kwlist,
+            args, kwds, "s:format", kwlist,
             &format)) {
         return NULL;
     }
