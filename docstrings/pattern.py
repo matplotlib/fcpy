@@ -54,22 +54,26 @@ Add a value to a pattern.
 Adds a single value to end of the list of values associated with the
 property named object.
 
+See :ref:`properties` for a list of the understood properties.
+
 Parameters
 ----------
 object : str
-    TODO: Define
+    The property name.
 
 value : any
-    TODO: Define types
+    The property value.
 """
 
 Pattern_delete = """
 Delete all values of a given type from a pattern.
 
+See :ref:`properties` for a list of the understood properties.
+
 Parameters
 ----------
 object : str
-    TODO: Define
+    The property name.
 """
 
 Pattern_format = """
@@ -257,9 +261,12 @@ with spaces removed.
 Pattern_get = """
 Gets a value.
 
+See :ref:`properties` for a list of the understood properties.
+
 Parameters
 ----------
 object : str
+    The property name.
 
 index : int
 
@@ -276,13 +283,15 @@ Sets a given object to a given value.
 
 Equivalent to `delete` followed by `add`.
 
+See :ref:`properties` for a list of the understood properties.
+
 Parameters
 ----------
 object : str
-    TODO: Define
+    The property name
 
 value : any
-    TODO: Define types
+    The property value
 """
 
 Pattern_substitute = """
