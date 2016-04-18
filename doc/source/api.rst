@@ -29,3 +29,11 @@ Config
    :template: autosummary/class.rst
 
     Config
+
+Properties
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   properties.rst
