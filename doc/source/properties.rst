@@ -56,3 +56,6 @@ namelang        String  Language name to be used for the default value of
 prgname         String  String  Name of the running program
 postscriptname  String  Font family name in PostScript
 =============== ======= =========================================================
+
+Properties with type `FT_Face` or `CharSet` are not currently
+supported by `fcpy`.
