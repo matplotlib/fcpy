@@ -50,5 +50,4 @@ void fcpy_result_to_exception(FcResult result)
     }
 
     PyErr_SetString(PyExc_RuntimeError, "Unknown error from fontconfig");
-    return NULL;
 }
