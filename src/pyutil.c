@@ -171,3 +171,35 @@ fcpy_strlist_to_python(FcStrList *list)
 
     return result;
 }
+
+
+#if !PY3K
+PyObject *
+PyUnicode_EncodeFSDefault(PyObject *unicode)
+{
+    if (Py_FileSystemDefaultEncoding)
+        return PyUnicode_AsEncodedString(unicode,
+                                         Py_FileSystemDefaultEncoding,
+                                         "strict");
+    else
+        return PyUnicode_EncodeUTF8(PyUnicode_AS_UNICODE(unicode),
+                                    PyUnicode_GET_SIZE(unicode),
+                                    "strict");
+}
+
+char*
+PyUnicode_AsUTF8(PyObject *unicode)
+{
+    PyObject *bytes;
+    char *result;
+
+    bytes = PyUnicode_AsEncodedString(unicode, "utf-8", "strict");
+    if (bytes == NULL) {
+        return NULL;
+    }
+
+    result = PyBytes_AsString(bytes);
+    Py_DECREF(bytes);
+    return result;
+}
+#endif

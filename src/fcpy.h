@@ -30,25 +30,8 @@ either expressed or implied, of the FreeBSD Project.
 #ifndef __FCPY_H__
 #define __FCPY_H__
 
-#include <Python.h>
-#include "structmember.h"
-
-#if PY_MAJOR_VERSION >= 3
-#define PY3K 1
-#else
-#define PY3K 0
-#ifndef Py_TYPE
-  #define Py_TYPE(ob) (((PyObject*)(ob))->ob_type)
-#endif
-#endif
-
-
-#include <fontconfig/fontconfig.h>
-
+#include "pyutil.h"
 
 extern PyObject *fcpy_module;
-
-
-#include "pyutil.h"
 
 #endif
