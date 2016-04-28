@@ -76,12 +76,18 @@ Py_Valiter_cnew(Py_Pattern *pattern, char *object)
     if (self == NULL) {
         return NULL;
     }
+
+    self->type = FcNameGetObjectType(object);
+    if (self->type == NULL) {
+        PyErr_SetString(PyExc_TypeError, "Unknown type");
+        return NULL;
+    }
+
     Py_INCREF(pattern);
     self->base.owner = (PyObject *)pattern;
     self->pattern = pattern->x;
     self->object = object;
     self->i = 0;
-    self->type = FcNameGetObjectType(object);
 
     return (PyObject *)self;
 }
@@ -218,6 +224,10 @@ Py_Pattern_init(Py_Pattern *self, PyObject *args, PyObject *kwds)
                 return -1;
             }
 
+            if (object == NULL) {
+                return -1;
+            }
+
             if (_Py_Pattern_add(self->x, object, value)) {
                 if (!PyErr_Occurred()) {
                     PyErr_Format(
@@ -295,6 +305,17 @@ Py_Pattern___reduce__(Py_Pattern *self, PyObject *args, PyObject *kwds)
 }
 
 
+static PyObject *
+Py_Pattern_copy(Py_Pattern *self, PyObject *args, PyObject *kwds)
+{
+    FcPattern *new_pattern;
+
+    new_pattern = FcPatternDuplicate(self->x);
+
+    return Py_Pattern_cnew(new_pattern);
+}
+
+
 static FcBool
 _Py_Pattern_add_single(FcPattern *pattern, char *object, PyObject *value)
 {
@@ -302,29 +323,44 @@ _Py_Pattern_add_single(FcPattern *pattern, char *object, PyObject *value)
     double d;
     char *s;
     FcBool b;
+    PyObject *tmp;
 
     const FcObjectType *object_type;
 
-    object_type = FcNameGetObjectType(object);
+    int type_id;
 
-    switch(object_type->type) {
+    /* Newer versions of fontconfig take *either* a double or range
+       for 'size', but always return a double.  To be backward
+       compatible and to not have the set/get mismatch (and to work
+       around the fact that FcNameGetObjectType now lies), just always
+       use a double for 'size'.  */
+    if (strncmp(object, "size", 5) == 0) {
+        type_id = FcTypeDouble;
+    } else {
+        object_type = FcNameGetObjectType(object);
+        if (object_type == NULL) {
+            PyErr_Format(PyExc_TypeError, "Unknown type");
+            return 1;
+        }
+        type_id = object_type->type;
+    }
+
+    switch(type_id) {
     case FcTypeInteger:
-        if (PyLong_Check(value)) {
-            i = PyLong_AsLong(value);
+        if (PyNumber_Check(value)) {
+            tmp = PyNumber_Long(value);
+            i = PyLong_AsLong(tmp);
+            Py_DECREF(tmp);
             return !FcPatternAddInteger(pattern, object, i);
         }
-        #if !PY3K
-        else if (PyInt_Check(value)) {
-            i = PyInt_AsLong(value);
-            return !FcPatternAddInteger(pattern, object, i);
-        }
-        #endif
         PyErr_Format(PyExc_TypeError, "Expected int for '%s'", object);
         return 1;
 
     case FcTypeDouble:
-        if (PyFloat_Check(value)) {
-            d = PyFloat_AsDouble(value);
+        if (PyNumber_Check(value)) {
+            tmp = PyNumber_Float(value);
+            d = PyLong_AsLong(tmp);
+            Py_DECREF(tmp);
             return !FcPatternAddDouble(pattern, object, d);
         }
         PyErr_Format(PyExc_TypeError, "Expected float for '%s'", object);
@@ -333,9 +369,15 @@ _Py_Pattern_add_single(FcPattern *pattern, char *object, PyObject *value)
     case FcTypeString:
         if (PyBytes_Check(value)) {
             s = PyBytes_AsString(value);
+            if (s == NULL) {
+                return 1;
+            }
             return !FcPatternAddString(pattern, object, (unsigned char *)s);
         } else if (PyUnicode_Check(value)) {
             s = PyUnicode_AsUTF8(value);
+            if (s == NULL) {
+                return 1;
+            }
             return !FcPatternAddString(pattern, object, (unsigned char *)s);
         }
         PyErr_Format(PyExc_TypeError, "Expected bytes or unicode for '%s'", object);
@@ -345,16 +387,11 @@ _Py_Pattern_add_single(FcPattern *pattern, char *object, PyObject *value)
         b = PyObject_IsTrue(value);
         return !FcPatternAddBool(pattern, object, b);
 
-    case FcTypeUnknown:
-    case FcTypeVoid:
-    case FcTypeMatrix:
-    case FcTypeCharSet:
-    case FcTypeFTFace:
-    case FcTypeLangSet:
+    default:
         break;
     }
 
-    PyErr_SetString(PyExc_TypeError, "Unknown or mismatched type");
+    PyErr_SetString(PyExc_TypeError, "Unknown type");
     return 1;
 }
 
@@ -462,7 +499,20 @@ _Py_Pattern_get(FcPattern *pattern, const FcObjectType *type, char *object, int 
     FcBool b;
     FcResult result;
 
-    switch (type->type) {
+    int type_id;
+
+    /* Newer versions of fontconfig take *either* a double or range
+       for 'size', but always return a double.  To be backward
+       compatible and to not have the set/get mismatch (and to work
+       around the fact that FcNameGetObjectType now lies), just always
+       use a double for 'size'.  */
+    if (strncmp(object, "size", 5) == 0) {
+        type_id = FcTypeDouble;
+    } else {
+        type_id = type->type;
+    }
+
+    switch (type_id) {
     case FcTypeInteger:
         result = FcPatternGetInteger(pattern, object, idx, &i);
         if (result) {
@@ -474,6 +524,7 @@ _Py_Pattern_get(FcPattern *pattern, const FcObjectType *type, char *object, int 
         #else
         return PyInt_FromLong(i);
         #endif
+
     case FcTypeDouble:
         result = FcPatternGetDouble(pattern, object, idx, &d);
         if (result) {
@@ -481,6 +532,7 @@ _Py_Pattern_get(FcPattern *pattern, const FcObjectType *type, char *object, int 
             return NULL;
         }
         return PyFloat_FromDouble(d);
+
     case FcTypeString:
         result = FcPatternGetString(pattern, object, idx, &s);
         if (result) {
@@ -488,6 +540,7 @@ _Py_Pattern_get(FcPattern *pattern, const FcObjectType *type, char *object, int 
             return NULL;
         }
         return PyUnicode_FromString((char *)s);
+
     case FcTypeBool:
         result = FcPatternGetBool(pattern, object, idx, &b);
         if (result) {
@@ -500,12 +553,7 @@ _Py_Pattern_get(FcPattern *pattern, const FcObjectType *type, char *object, int 
             Py_RETURN_FALSE;
         }
 
-    case FcTypeUnknown:
-    case FcTypeVoid:
-    case FcTypeMatrix:
-    case FcTypeCharSet:
-    case FcTypeFTFace:
-    case FcTypeLangSet:
+    default:
         break;
     }
 
@@ -573,6 +621,8 @@ Py_Pattern_substitute(Py_Pattern *self, PyObject *args, PyObject *kwds)
 
 static PyMethodDef Py_Pattern_methods[] = {
     {"__reduce__", (PyCFunction)Py_Pattern___reduce__, METH_NOARGS, NULL},
+    {"__copy__", (PyCFunction)Py_Pattern_copy, METH_NOARGS, NULL},
+    {"copy", (PyCFunction)Py_Pattern_copy, METH_NOARGS, NULL},
     PATTERN_METHOD(add),
     PATTERN_METHOD(delete),
     PATTERN_METHOD(format),

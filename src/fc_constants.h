@@ -27,11 +27,12 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-#ifndef __FCPY_H__
-#define __FCPY_H__
+#ifndef FC_CONSTANTS_H
+#define FC_CONSTANTS_H
 
-#include "pyutil.h"
+#include "fcpy.h"
 
-extern PyObject *fcpy_module;
+int
+setup_constants(PyObject *m);
 
-#endif
+#endif /* FC_CONSTANTS_H */

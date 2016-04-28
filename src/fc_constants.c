@@ -27,11 +27,64 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
-#ifndef __FCPY_H__
-#define __FCPY_H__
+#include "fc_constants.h"
+#include "doc/fc_constants.h"
+#include "constants.h"
 
-#include "pyutil.h"
 
-extern PyObject *fcpy_module;
+ftpy_ConstantType Py_WEIGHT_ConstantType;
 
-#endif
+static PyTypeObject Py_WEIGHT_Type;
+#define WEIGHT_CONST(name) DEF_CONST(name, FC_WEIGHT)
+static constant_def WEIGHT_constants[] = {
+    WEIGHT_CONST(LIGHT),
+    WEIGHT_CONST(MEDIUM),
+    WEIGHT_CONST(DEMIBOLD),
+    WEIGHT_CONST(BOLD),
+    WEIGHT_CONST(BLACK),
+    {NULL}
+};
+
+
+ftpy_ConstantType Py_SLANT_ConstantType;
+
+static PyTypeObject Py_SLANT_Type;
+#define SLANT_CONST(name) DEF_CONST(name, FC_SLANT)
+static constant_def SLANT_constants[] = {
+    SLANT_CONST(ROMAN),
+    SLANT_CONST(ITALIC),
+    SLANT_CONST(OBLIQUE),
+    {NULL}
+};
+
+
+ftpy_ConstantType Py_SPACING_ConstantType;
+
+static PyTypeObject Py_SPACING_Type;
+#define SPACING_CONST(name) DEF_CONST(name, FC)
+static constant_def SPACING_constants[] = {
+    SPACING_CONST(PROPORTIONAL),
+    SPACING_CONST(MONO),
+    SPACING_CONST(CHARCELL),
+    {NULL}
+};
+
+
+int
+setup_constants(PyObject *m)
+{
+  return (
+      define_constant_namespace(
+          m, &Py_WEIGHT_Type, &Py_WEIGHT_ConstantType,
+          "fcpy.WEIGHT",
+          doc_WEIGHT, WEIGHT_constants) ||
+      define_constant_namespace(
+          m, &Py_SLANT_Type, &Py_SLANT_ConstantType,
+          "fcpy.SLANT",
+          doc_SLANT, SLANT_constants) ||
+      define_constant_namespace(
+          m, &Py_SPACING_Type, &Py_SPACING_ConstantType,
+          "fcpy.SPACING",
+          doc_SPACING, SPACING_constants)
+      );
+}

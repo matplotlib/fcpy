@@ -126,7 +126,7 @@ Py_Config_add_dir(Py_Config *self, PyObject *args, PyObject *kwds)
         return NULL;
     }
 
-    dir = PyBytes_AsString(pydir_bytes);
+    dir = (unsigned char *)PyBytes_AsString(pydir_bytes);
     if (dir == NULL) {
         Py_DECREF(pydir_bytes);
         return NULL;
@@ -163,7 +163,7 @@ Py_Config_add_file(Py_Config *self, PyObject *args, PyObject *kwds)
         return NULL;
     }
 
-    file = PyBytes_AsString(pyfile_bytes);
+    file = (unsigned char *)PyBytes_AsString(pyfile_bytes);
     if (file == NULL) {
         Py_DECREF(pyfile_bytes);
         return NULL;

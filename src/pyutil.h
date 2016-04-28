@@ -30,7 +30,19 @@ either expressed or implied, of the FreeBSD Project.
 #ifndef __PYUTIL_H__
 #define __PYUTIL_H__
 
-#include "fcpy.h"
+#include <Python.h>
+#include "structmember.h"
+
+#include <fontconfig/fontconfig.h>
+
+#if PY_MAJOR_VERSION >= 3
+#define PY3K 1
+#else
+#define PY3K 0
+#ifndef Py_TYPE
+  #define Py_TYPE(ob) (((PyObject*)(ob))->ob_type)
+#endif
+#endif
 
 
 #define STRINGIFY(s) XSTRINGIFY(s)
@@ -76,5 +88,10 @@ PyObject *fcpy_strlist_to_python(FcStrList *list);
 #define DEF_METHOD_NOARGS(name, type) \
     { #name, (PyCFunction)Py_ ## type ## _ ## name, METH_NOARGS, doc_ ## type ## _ ## name }
 
+
+#if !PY3K
+PyObject* PyUnicode_EncodeFSDefault(PyObject *unicode);
+char* PyUnicode_AsUTF8(PyObject *unicode);
+#endif
 
 #endif
