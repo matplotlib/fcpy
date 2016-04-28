@@ -31,6 +31,7 @@ either expressed or implied, of the FreeBSD Project.
 #include "doc/fcpy.h"
 
 #include "config.h"
+#include "fc_constants.h"
 #include "pattern.h"
 #include "version.h"
 
@@ -116,7 +117,8 @@ PyObject *fcpy_module;
     if (setup_Config(fcpy_module) ||
         setup_Pattern(fcpy_module) ||
         setup_pyutil(fcpy_module) ||
-        setup_version(fcpy_module)) {
+        setup_version(fcpy_module) ||
+        setup_constants(fcpy_module)) {
         INITERROR;
     }
 

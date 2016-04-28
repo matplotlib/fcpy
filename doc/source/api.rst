@@ -30,6 +30,17 @@ Config
 
     Config
 
+Constants
+---------
+
+.. autosummary::
+   :toctree: _generated
+   :template: autosummary/class.rst
+
+    SLANT
+    SPACING
+    WEIGHT
+
 Properties
 ----------
 
