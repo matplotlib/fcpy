@@ -72,6 +72,16 @@ ValueError :
     font found).
 """
 
+Config_add_pattern = """
+Add a pattern to the application-specific font database.  Useful for adding
+fonts that fontconfig doesn't index on its own.
+
+Parameters
+----------
+pattern : Pattern
+    The font pattern to add.
+"""
+
 Config_build_fonts = """
 Build font database.
 
