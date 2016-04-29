@@ -153,7 +153,7 @@ Py_Config_add_file(Py_Config *self, PyObject *args, PyObject *kwds)
     static char *kwlist[] = {"file", NULL};
 
     if (!PyArg_ParseTupleAndKeywords(
-            args, kwds, "O:add_font", kwlist,
+            args, kwds, "O:add_file", kwlist,
             &pyfile)) {
         return NULL;
     }
@@ -175,6 +175,43 @@ Py_Config_add_file(Py_Config *self, PyObject *args, PyObject *kwds)
     }
 
     Py_DECREF(pyfile_bytes);
+
+    Py_RETURN_NONE;
+}
+
+
+static PyObject*
+Py_Config_add_pattern(Py_Config *self, PyObject *args, PyObject *kwds)
+{
+    PyObject *py_pattern;
+    FcPattern *pattern;
+    FcFontSet *font_set;
+
+    static char *kwlist[] = {"pattern", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(
+            args, kwds, "O:add_pattern", kwlist,
+            &py_pattern)) {
+        return NULL;
+    }
+
+    if (Py_TYPE(py_pattern) != &Py_Pattern_Type) {
+        PyErr_SetString(PyExc_TypeError, "pattern must be Pattern object");
+        return NULL;
+    }
+
+    pattern = FcPatternDuplicate(((Py_Pattern *)py_pattern)->x);
+
+    font_set = FcConfigGetFonts(self->x, FcSetApplication);
+    if (font_set == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "couldn't get application FontSet");
+        return NULL;
+    }
+
+    if (!FcFontSetAdd(font_set, pattern)) {
+        PyErr_SetString(PyExc_MemoryError, "allocation error");
+        return NULL;
+    }
 
     Py_RETURN_NONE;
 }
@@ -299,6 +336,7 @@ Py_Config_match(Py_Config *self, PyObject *args, PyObject *kwds)
 static PyMethodDef Py_Config_methods[] = {
     CONFIG_METHOD(add_dir),
     CONFIG_METHOD(add_file),
+    CONFIG_METHOD(add_pattern),
     CONFIG_METHOD_NOARGS(build_fonts),
     CONFIG_METHOD_NOARGS(clear),
     CONFIG_METHOD_NOARGS(get_config_files),
